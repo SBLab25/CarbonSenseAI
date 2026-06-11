@@ -5,7 +5,7 @@ from app.config import settings
 from app.models.schemas import GeminiError
 
 genai.configure(api_key=settings.gemini_api_key)
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "gemini-2.0-flash"
 
 NL_PARSE_SCHEMA = {
     "name": "parse_carbon_activity",
