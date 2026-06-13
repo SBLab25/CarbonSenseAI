@@ -69,3 +69,37 @@ async def update_user(user_id: str, user_in: UserCreate, db: aiosqlite.Connectio
     async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as cursor:
         updated = await cursor.fetchone()
     return UserProfile(**dict(updated))
+
+@router.delete("/users/{user_id}/data")
+async def delete_user_data(user_id: str, db: aiosqlite.Connection = Depends(get_db)):
+    # Verify user exists
+    async with db.execute("SELECT id FROM users WHERE id = ?", (user_id,)) as cursor:
+        row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Delete all activities
+    await db.execute("DELETE FROM activities WHERE user_id = ?", (user_id,))
+    # Delete all missions
+    await db.execute("DELETE FROM missions WHERE user_id = ?", (user_id,))
+    
+    # Update user baseline to 0 and eco points
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    await db.execute(
+        """
+        UPDATE users SET
+            baseline_footprint_kg = 0.0,
+            eco_points = 0,
+            updated_at = ?
+        WHERE id = ?
+        """,
+        (now, user_id)
+    )
+    
+    await db.commit()
+    
+    # Also need to clear insight caches
+    from app.services.insights_cache import insights_cache
+    await insights_cache.invalidate(user_id)
+    
+    return {"status": "success", "message": "All user data wiped successfully."}

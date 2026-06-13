@@ -20,9 +20,9 @@ export const FootprintPieChart: React.FC<FootprintPieChartProps> = ({ breakdown,
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900/50 p-6 text-center text-slate-400">
+      <div className="flex h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6 text-center text-slate-500 dark:text-slate-400">
         <p className="text-sm font-medium">No activity data yet</p>
-        <p className="mt-1 text-xs text-slate-500">Log your first activity to generate a carbon breakdown.</p>
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Log your first activity to generate a carbon breakdown.</p>
       </div>
     );
   }
@@ -31,8 +31,8 @@ export const FootprintPieChart: React.FC<FootprintPieChartProps> = ({ breakdown,
     <div className="relative flex h-[260px] w-full items-center justify-center">
       {/* Center Label Overlay */}
       <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none select-none">
-        <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">Total CO₂</span>
-        <span className="text-xl font-bold text-white mt-0.5">{formatKg(totalKg)}</span>
+        <span className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">Total CO₂</span>
+        <span className="text-xl font-bold text-slate-800 dark:text-white mt-0.5">{formatKg(totalKg)}</span>
       </div>
 
       <div className="w-full h-full" role="img" aria-label="Carbon footprint breakdown by category">
@@ -57,15 +57,15 @@ export const FootprintPieChart: React.FC<FootprintPieChartProps> = ({ breakdown,
                 if (active && payload && payload.length) {
                   const entry = payload[0].payload;
                   return (
-                    <div className="rounded-xl border border-slate-700 bg-slate-900/90 p-3 shadow-xl backdrop-blur-sm">
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 p-3 shadow-xl backdrop-blur-sm">
                       <div className="flex items-center gap-2">
                         <span
                           className="h-3.5 w-3.5 rounded-full"
                           style={{ backgroundColor: entry.color }}
                         />
-                        <span className="text-sm font-bold text-white">{entry.name}</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-white">{entry.name}</span>
                       </div>
-                      <div className="mt-1.5 flex flex-col text-xs text-slate-300">
+                      <div className="mt-1.5 flex flex-col text-xs text-slate-600 dark:text-slate-300">
                         <span>Carbon: {formatKg(entry.value)}</span>
                         <span>Percentage: {entry.percentage.toFixed(1)}%</span>
                       </div>

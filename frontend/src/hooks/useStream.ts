@@ -17,7 +17,11 @@ export function useStream() {
     setError(null);
   }, []);
 
-  const startStream = useCallback(async (endpoint: string, body: object) => {
+  const startStream = useCallback(async (
+    endpoint: string, 
+    body: object, 
+    callbacks?: { onMessageSplit?: (msg: string) => void, onUpdateDashboard?: () => void }
+  ) => {
     reset();
     
     setIsStreaming(true);
@@ -56,6 +60,7 @@ export function useStream() {
       const decoder = new TextDecoder();
       let buffer = '';
       let shouldStop = false;
+      let currentMessageContent = '';
 
       while (!shouldStop) {
         const { value, done } = await reader.read();
@@ -70,17 +75,33 @@ export function useStream() {
           if (!trimmed) continue;
           
           if (trimmed.startsWith('data: ')) {
-            const data = trimmed.slice(6);
+            let data = trimmed.slice(6);
+            data = data.replace(/\\n/g, '\n');
             if (data === '[PIPELINE_COMPLETE]') {
               shouldStop = true;
               break;
+            }
+            if (data === '[NEXT_MESSAGE]') {
+              if (currentMessageContent.trim() && callbacks?.onMessageSplit) {
+                callbacks.onMessageSplit(currentMessageContent);
+              }
+              currentMessageContent = '';
+              setContent('');
+              continue;
+            }
+            if (data === '[UPDATE_DASHBOARD]') {
+              if (callbacks?.onUpdateDashboard) {
+                callbacks.onUpdateDashboard();
+              }
+              continue;
             }
             if (data.startsWith('[ERROR]')) {
               setError(data.replace('[ERROR]', '').trim() || 'Analysis temporarily unavailable.');
               shouldStop = true;
               break;
             }
-            setContent((prev) => prev + data);
+            currentMessageContent += data;
+            setContent(currentMessageContent);
           }
         }
       }

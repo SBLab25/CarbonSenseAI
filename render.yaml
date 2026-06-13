@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: carbonsense-backend
+    env: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: "*" # Change this to your Vercel URL later
+      - key: DATABASE_URL
+        value: ./carbonsense.db

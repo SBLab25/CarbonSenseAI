@@ -39,12 +39,12 @@ PLANNER_SCHEMA = {
                         },
                         "mission_type": {
                             "type": "STRING",
-                            "description": "If this can be turned into a Mission Center challenge, specify the type, otherwise null."
+                            "description": "If this can be turned into a Mission Center challenge, specify the type. If not applicable, output 'none'."
                         }
                     },
                     "required": ["title", "action", "category", "monthly_saving_kg", "difficulty", "timeframe_days"]
                 },
-                "description": "List of 3 to 5 reduction strategies."
+                "description": "List of EXACTLY 5 highly diverse, specific reduction strategies. Do not provide fewer than 5."
             },
             "total_potential_saving_kg": {
                 "type": "NUMBER",
@@ -70,8 +70,9 @@ PLANNER_SCHEMA = {
 
 class PlannerAgent:
     async def plan(self, context: UserContext, analysis: AnalysisResult) -> PlanResult:
-        system_prompt = """You are a sustainability planner. Create specific, actionable
-reduction strategies based on the analyst's findings. Rank by monthly_saving_kg.
+        system_prompt = """You are a highly creative sustainability planner. Create EXACTLY 5 diverse, specific, and actionable carbon reduction strategies based strictly on the user's specific lifestyle and the analyst's findings.
+Do NOT use generic templates. Provide unique ideas tailored to their primary hotspot.
+Rank by monthly_saving_kg.
 Difficulty: easy=habit change, medium=lifestyle change, hard=major investment.
 """
         

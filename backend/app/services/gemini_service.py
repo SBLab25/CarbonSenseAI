@@ -1,11 +1,20 @@
-import google.generativeai as genai
-from google.api_core.exceptions import GoogleAPIError
+import json
+import asyncio
 from typing import AsyncGenerator
+from groq import AsyncGroq
+from openai import AsyncOpenAI
+import google.generativeai as genai
+
+try:
+    from anthropic import AsyncAnthropic
+except ImportError:
+    AsyncAnthropic = None
+
 from app.config import settings
 from app.models.schemas import GeminiError
+from app.services.context import ai_config_ctx
 
 genai.configure(api_key=settings.gemini_api_key)
-MODEL_NAME = "gemini-2.0-flash"
 
 NL_PARSE_SCHEMA = {
     "name": "parse_carbon_activity",
@@ -40,84 +49,215 @@ NL_PARSE_SCHEMA = {
     }
 }
 
-async def function_call(system_prompt: str, user_message: str, function_schema: dict) -> dict:
-    try:
-        tool_config = {
-            "function_calling_config": {
-                "mode": "ANY"
+def convert_to_openai_schema(schema: dict) -> dict:
+    """Converts a legacy Gemini schema into a standard OpenAI JSON schema."""
+    import copy
+    new_schema = copy.deepcopy(schema)
+    if "type" in new_schema and isinstance(new_schema["type"], str):
+        new_schema["type"] = new_schema["type"].lower()
+    
+    if "properties" in new_schema:
+        for k, v in new_schema["properties"].items():
+            if "type" in v:
+                t = v["type"].upper()
+                if t == "STRING":
+                    v["type"] = "string"
+                elif t == "NUMBER":
+                    v["type"] = "number"
+                elif t == "BOOLEAN":
+                    v["type"] = "boolean"
+                elif t == "INTEGER":
+                    v["type"] = "integer"
+                elif t == "ARRAY":
+                    v["type"] = "array"
+                elif t == "OBJECT":
+                    v["type"] = "object"
+            if "items" in v:
+                v["items"] = convert_to_openai_schema(v["items"])
+    
+    return new_schema
+
+def get_ai_client_info():
+    config = ai_config_ctx.get()
+    provider = config.get("provider", "groq").lower()
+    api_key = config.get("api_key")
+    model = config.get("model")
+
+    if not api_key:
+        if provider == "groq": api_key = settings.groq_api_key
+        elif provider == "openrouter": api_key = settings.groq_api_key if settings.groq_api_key.startswith("sk-or-") else None
+        elif provider == "gemini": api_key = settings.gemini_api_key
+        elif provider == "openai": api_key = getattr(settings, "openai_api_key", None)
+        elif provider == "anthropic": api_key = getattr(settings, "anthropic_api_key", None)
+
+    if not model:
+        if provider == "groq": model = "openai/gpt-oss-120b"
+        elif provider == "openrouter": model = "nvidia/nemotron-4-340b-instruct"
+        elif provider == "gemini": model = "gemini-1.5-flash"
+        elif provider == "openai": model = "gpt-4o-mini"
+        elif provider == "anthropic": model = "claude-3-5-sonnet-20241022"
+
+    return provider, api_key, model
+
+async def function_call_primary(system_prompt: str, user_message: str, function_schema: dict) -> dict:
+    provider, api_key, model = get_ai_client_info()
+    
+    if provider == "anthropic" and AsyncAnthropic:
+        client = AsyncAnthropic(api_key=api_key)
+        tool = {
+            "name": function_schema.get("name", "function"),
+            "description": function_schema.get("description", ""),
+            "input_schema": convert_to_openai_schema(function_schema.get("parameters", {}))
+        }
+        response = await client.messages.create(
+            model=model,
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}],
+            tools=[tool],
+            tool_choice={"type": "tool", "name": tool["name"]}
+        )
+        for block in response.content:
+            if block.type == "tool_use":
+                return block.input
+        raise ValueError("No function call returned by Anthropic")
+    
+    elif provider == "gemini":
+        return await function_call_gemini(system_prompt, user_message, function_schema, api_key, model)
+
+    else:
+        # OpenAI compatibility format
+        if provider == "openai":
+            client = AsyncOpenAI(api_key=api_key)
+        elif provider == "openrouter":
+            client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+        else: # groq
+            client = AsyncGroq(api_key=api_key)
+
+        tool = {
+            "type": "function",
+            "function": {
+                "name": function_schema.get("name", "function"),
+                "description": function_schema.get("description", ""),
+                "parameters": convert_to_openai_schema(function_schema.get("parameters", {}))
             }
         }
-        
-        model = genai.GenerativeModel(
-            model_name=MODEL_NAME,
-            system_instruction=system_prompt,
-            tools=[function_schema]
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            tools=[tool],
+            tool_choice={"type": "function", "function": {"name": tool["function"]["name"]}}
         )
-        
-        response = await model.generate_content_async(
-            user_message,
-            tool_config=tool_config
-        )
-        
-        if not response.candidates:
-            raise GeminiError("Analysis temporarily unavailable. Please try again.", "Response blocked or empty candidates")
-            
-        candidate = response.candidates[0]
-        if candidate.finish_reason and candidate.finish_reason.name in ["SAFETY", "RECITATION", "OTHER"]:
-            raise GeminiError("Analysis temporarily unavailable. Please try again.", f"Response blocked by finish reason: {candidate.finish_reason.name}")
-            
-        if not candidate.content or not candidate.content.parts:
-            raise GeminiError("Analysis temporarily unavailable. Please try again.", "No parts in response candidate content")
-            
-        for part in candidate.content.parts:
-            if hasattr(part, "function_call") and part.function_call:
-                args = {}
-                for k, v in part.function_call.args.items():
-                    args[k] = v
-                return args
-                
-        raise GeminiError("Analysis temporarily unavailable. Please try again.", "No function call part found in response")
-        
-    except GoogleAPIError as e:
-        raise GeminiError("Analysis temporarily unavailable. Please try again.", f"Google API error: {str(e)}")
-    except Exception as e:
-        if isinstance(e, GeminiError):
-            raise e
-        raise GeminiError("Analysis temporarily unavailable. Please try again.", f"Unexpected error during function call: {str(e)}")
+        message = response.choices[0].message
+        if message.tool_calls:
+            tool_call = message.tool_calls[0]
+            return json.loads(tool_call.function.arguments)
+        elif message.content:
+            try:
+                return json.loads(message.content)
+            except json.JSONDecodeError:
+                pass
+        raise ValueError("No function call returned")
+
+async def function_call_gemini(system_prompt: str, user_message: str, function_schema: dict, api_key: str = None, model_name: str = "gemini-1.5-flash") -> dict:
+    if api_key:
+        genai.configure(api_key=api_key)
+    prompt = f"{system_prompt}\n\nYou MUST respond with ONLY a valid JSON object matching this schema:\n{json.dumps(function_schema)}\n\nUser input: {user_message}"
+    model = genai.GenerativeModel(model_name, generation_config={"response_mime_type": "application/json"})
+    response = await model.generate_content_async(prompt)
+    if not response.text:
+        raise ValueError("Empty response from Gemini")
+    return json.loads(response.text)
+
+async def function_call(system_prompt: str, user_message: str, function_schema: dict) -> dict:
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            return await function_call_primary(system_prompt, user_message, function_schema)
+        except Exception as e_primary:
+            print(f"API failed: {e_primary}. Attempt {attempt+1}/{max_retries}")
+            if attempt == max_retries - 1:
+                raise GeminiError("Analysis temporarily unavailable.", f"API failed: {e_primary}")
+            await asyncio.sleep(2)
 
 async def stream_generate(system_prompt: str, user_message: str, history=None) -> AsyncGenerator[str, None]:
+    provider, api_key, model = get_ai_client_info()
+
     try:
-        model = genai.GenerativeModel(
-            model_name=MODEL_NAME,
-            system_instruction=system_prompt
-        )
-        
-        formatted_history = []
-        if history:
-            for h in history:
-                role = h.get("role", "user")
-                if role in ["model", "assistant", "coach"]:
-                    role = "model"
-                else:
-                    role = "user"
-                content = h.get("content", "")
-                if content:
-                    formatted_history.append({
-                        "role": role,
-                        "parts": [content]
-                    })
-                    
-        chat = model.start_chat(history=formatted_history)
-        response = await chat.send_message_async(user_message, stream=True)
-        async for chunk in response:
-            try:
+        if provider == "anthropic" and AsyncAnthropic:
+            client = AsyncAnthropic(api_key=api_key)
+            messages = []
+            if history:
+                for h in history:
+                    role = "assistant" if h.get("role") in ["model", "assistant", "coach"] else "user"
+                    content = h.get("content", "")
+                    if content:
+                        messages.append({"role": role, "content": content})
+            messages.append({"role": "user", "content": user_message})
+            
+            async with client.messages.stream(
+                model=model,
+                max_tokens=2048,
+                system=system_prompt,
+                messages=messages
+            ) as stream:
+                async for text in stream.text_stream:
+                    yield text
+
+        elif provider == "gemini":
+            if api_key:
+                genai.configure(api_key=api_key)
+            gemini_history = []
+            if history:
+                for h in history:
+                    role = "model" if h.get("role") in ["model", "assistant", "coach"] else "user"
+                    gemini_history.append({"role": role, "parts": [h.get("content", "")]})
+            
+            g_model = genai.GenerativeModel(model, system_instruction=system_prompt)
+            chat = g_model.start_chat(history=gemini_history)
+            response = await chat.send_message_async(user_message, stream=True)
+            async for chunk in response:
                 if chunk.text:
                     yield chunk.text
-            except Exception:
-                yield "[STREAM_ERROR] Coaching temporarily unavailable."
-                return
-    except Exception:
-        yield "[STREAM_ERROR] Coaching temporarily unavailable."
+
+        else:
+            # OpenAI compatibility
+            if provider == "openai":
+                client = AsyncOpenAI(api_key=api_key)
+            elif provider == "openrouter":
+                client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+            else: # groq
+                client = AsyncGroq(api_key=api_key)
+
+            messages = [{"role": "system", "content": system_prompt}]
+            if history:
+                for h in history:
+                    role = "assistant" if h.get("role") in ["model", "assistant", "coach"] else "user"
+                    content = h.get("content", "")
+                    if content:
+                        messages.append({"role": role, "content": content})
+            
+            messages.append({"role": "user", "content": user_message})
+
+            response = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                stream=True
+            )
+            
+            async for chunk in response:
+                try:
+                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                        yield chunk.choices[0].delta.content
+                except Exception:
+                    continue
+
+    except Exception as e:
+        print(f"Stream error: {e}")
+        yield f"[STREAM_ERROR] Coaching temporarily unavailable. Details: {e}"
 
 async def parse_activity_nl(description: str) -> dict:
     system_prompt = """You are a natural language parser for carbon-emitting activities.

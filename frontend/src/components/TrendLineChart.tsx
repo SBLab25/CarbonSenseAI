@@ -50,7 +50,7 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
             className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all duration-200 ${
               selectedDays === r.value
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {r.label}
@@ -61,9 +61,9 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
       {/* Chart container */}
       <div className="flex-1 min-h-[200px]" role="img" aria-label="Daily carbon footprint trends">
         {!hasData ? (
-          <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900/50 p-6 text-center text-slate-400">
+          <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6 text-center text-slate-500 dark:text-slate-400">
             <p className="text-sm font-medium">No trend data yet</p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
               Start logging activities to see your trend.
             </p>
           </div>
@@ -90,8 +90,8 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="rounded-xl border border-slate-700 bg-slate-900/90 p-3 shadow-xl backdrop-blur-sm">
-                        <p className="text-xs font-semibold text-slate-400">
+                      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 p-3 shadow-xl backdrop-blur-sm">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                           {new Date(data.date).toLocaleDateString('en-US', {
                             weekday: 'long',
                             year: 'numeric',
@@ -99,7 +99,7 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
                             day: 'numeric',
                           })}
                         </p>
-                        <p className="text-sm font-bold text-white mt-1">
+                        <p className="text-sm font-bold text-slate-800 dark:text-white mt-1">
                           CO₂: {formatKg(data.total_kg)}
                         </p>
                       </div>

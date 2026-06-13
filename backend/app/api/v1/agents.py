@@ -17,7 +17,8 @@ async def analyze_footprint(req: AnalyzeRequest):
         try:
             async for token in orchestrator.run_pipeline(req.user_id):
                 # SSE data framing
-                yield f"data: {token}\n\n"
+                safe_token = token.replace("\n", "\\n")
+                yield f"data: {safe_token}\n\n"
             yield "data: [PIPELINE_COMPLETE]\n\n"
         except Exception:
             yield "data: [ERROR] Analysis temporarily unavailable.\n\n"

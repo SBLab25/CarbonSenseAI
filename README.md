@@ -6,19 +6,20 @@ CarbonSense AI is a multi-agent carbon footprint coaching platform built for **P
 
 ## 🚀 Key Features
 
-1. **Multi-Agent AI Coaching Pipeline**: Chained agents (Baseline → Analyst → Planner → Coach) powered by **Gemini 1.5 Flash** to estimate, analyze, plan, and coach users.
-2. **AI Natural Language Activity Logger**: Log daily activities (e.g. *"I drove 25km in a petrol car"* or *"We ate beef burger"*) and let AI parse, categorize, and calculate carbon impact instantly.
-3. **Interactive Insights Dashboard**: View carbon footprint breakdowns by category (Pie Chart), daily emission trends (Line Chart), and progress towards monthly reduction goals.
-4. **Gamified Mission Center**: Accept and complete AI-suggested carbon reduction challenges (e.g. Meatless Mondays, public transit commutes) to earn Eco Points and level up your Eco-Tier.
-5. **Real-time Streaming Chat**: Converse with a persistent personal coach who retains context of your profile, activities, and active goals.
+1. **Multi-Agent AI Coaching Pipeline**: Chained agents (Baseline → Analyst → Planner → Coach) that estimate, analyze, plan, and coach users interactively.
+2. **AI Natural Language Activity Logger**: Log daily activities (e.g., *"I drove 25km in a petrol car"* or *"We ate a beef burger"*) and let AI parse, categorize, and calculate carbon impact instantly.
+3. **Multi-Provider AI Support**: Seamlessly switch between the best LLMs right from the UI without restarting the server! Powered by **Groq, Google Gemini, Anthropic, OpenAI, and OpenRouter**. Includes automatic fallbacks if a provider times out.
+4. **Interactive Insights Dashboard**: View carbon footprint breakdowns by category (Pie Chart), daily emission trends (Line Chart), and progress towards monthly reduction goals.
+5. **Gamified Mission Center**: Accept and complete AI-suggested carbon reduction challenges to earn Eco Points and level up your Eco-Tier (Phase 2).
+6. **Real-time Streaming Chat**: Converse with a persistent personal coach who retains context of your profile, activities, and active goals via blazing-fast SSE (Server-Sent Events).
 
 ---
 
 ## 🛠️ Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, `@tanstack/react-query`, Recharts, Lucide Icons, and Vitest.
-- **Backend**: FastAPI (Python 3.11/3.14), SQLite (via `aiosqlite` for async I/O), Pydantic v2, and Pytest.
-- **AI Engine**: Google Gemini 1.5 Flash (via `google-generativeai` SDK).
+- **Backend**: FastAPI (Python 3.11+), SQLite (via `aiosqlite` for async I/O), Pydantic v2, and Pytest.
+- **AI Integration**: Custom Provider Abstraction supporting Groq, Gemini, OpenAI, Anthropic, and OpenRouter via SDKs and direct REST calls.
 - **Environment & Dev**: Docker Compose, GitHub Actions.
 
 ---
@@ -33,7 +34,7 @@ graph TD
     D --> E(Coach Agent)
     E --> F[Streaming Chat Interface / SSE]
     
-    subgraph "Gemini 1.5 Flash Chaining"
+    subgraph "AI Chaining"
     B -.-|Estimates baseline footprint| G[(Database / Cache)]
     C -.-|Identifies hotspots & behavior| G
     D -.-|Creates reduction strategies| G
@@ -41,29 +42,16 @@ graph TD
     end
 ```
 
-1. **Baseline Agent**: Evaluates user profile attributes (diet, transport, energy use) on onboarding and estimates a conservative monthly baseline carbon footprint.
-2. **Analyst Agent**: Reviews logged activity history to detect category hotspots, changes vs. baseline, and recurring emission patterns.
-3. **Planner Agent**: Generates actionable, categorized reduction strategies ranked by difficulty (easy, medium, hard) and potential carbon offset savings.
-4. **Coach Agent**: Leverages the analysis and reduction strategies to stream encouraging, data-backed guidance to the user.
-
 ---
 
-## 📊 Carbon Emission Factors Reference
+## 💻 Running the App (Bare-Metal / Local)
 
-All calculations are aligned with standard international references:
-- **Electricity Grid (India)**: `0.708 kg CO₂/kWh` *(Source: CEA India)*
-- **Transport (per km)**: `car_petrol=0.21`, `car_diesel=0.17`, `car_electric=0.05`, `bus=0.089`, `train=0.041` *(Source: UK DEFRA 2023)*
-- **Food (per kg)**: `beef=27.0`, `lamb=39.2`, `pork=12.1`, `chicken=6.9`, `dairy=3.2` *(Source: Poore & Nemecek, Science 2018)*
-- **India Monthly Avg Footprint**: `158.0 kg CO₂` *(Derived from national 1.9 tonnes/year average)*
-
----
-
-## 💻 Local Setup & Running Guidelines
+If you prefer running the app directly on your host machine:
 
 ### Prerequisites
 - **Node.js** v18+
 - **Python** v3.11+
-- **Google Gemini API Key** (Get it from [Google AI Studio](https://aistudio.google.com/))
+- At least one AI API Key (e.g. Gemini, Groq, OpenRouter)
 
 ### 1. Backend Setup
 1. Navigate to the backend directory:
@@ -74,7 +62,7 @@ All calculations are aligned with standard international references:
    ```bash
    cp .env.example .env
    ```
-3. Set your `GEMINI_API_KEY` in the `.env` file.
+3. Add your `GEMINI_API_KEY` (or other keys like `GROQ_API_KEY`) to the `.env` file. You can also add keys dynamically in the Frontend UI later!
 4. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
@@ -83,18 +71,18 @@ All calculations are aligned with standard international references:
    ```bash
    uvicorn app.main:app --reload
    ```
-   The backend will be available at `http://localhost:8000`.
+   *The backend will be available at `http://localhost:8000`*
 
 ### 2. Frontend Setup
 1. Navigate to the frontend directory:
    ```bash
-   cd ../frontend
+   cd frontend
    ```
-2. Create your `.env` file:
+2. Create your `.env` file from the example:
    ```bash
    cp .env.example .env
    ```
-3. Install dependencies:
+3. Install Node dependencies:
    ```bash
    npm install
    ```
@@ -102,39 +90,85 @@ All calculations are aligned with standard international references:
    ```bash
    npm run dev
    ```
-   The frontend will be available at `http://localhost:5173`.
+   *The frontend will be available at `http://localhost:5173`*
 
 ---
 
-## 🧪 Running Tests
+## 🐳 Running the App (Docker Compose)
+
+For a seamless 1-click deployment using Docker:
+
+1. Create the `.env` files for both frontend and backend as described above. Ensure your keys are placed inside `backend/.env`.
+2. From the **root** directory of the repository, build and run the containers:
+   ```bash
+   docker-compose up --build -d
+   ```
+3. Access the application:
+   - **Frontend**: `http://localhost:80` (or just `http://localhost`)
+   - **Backend API Docs**: `http://localhost:8000/docs`
+
+> Note: The SQLite database is automatically volume-mapped to persist data across container restarts.
+
+---
+
+## ⚙️ AI Settings & Configurations
+
+You can change your AI model or provider directly from the **Settings** page in the UI without touching the `.env` file.
+1. Click **Settings** in the sidebar.
+2. Select your preferred **Provider** (e.g., Groq for maximum speed, Gemini for large contexts, OpenRouter for specialized open-source models).
+3. Select the model and securely input your API key (stored locally in your browser session).
+
+---
+
+## ☁️ Cloud Deployment (Vercel & Render)
+
+We have pre-configured this repository for a seamless cloud deployment using **Render** for the Backend and **Vercel** for the Frontend.
+
+### 1. Deploy the Backend to Render
+Render provides a great free tier for Dockerized FastAPI apps.
+1. Push this repository to your GitHub account.
+2. Sign up/Log in to [Render](https://render.com).
+3. Click **New +** -> **Blueprint**.
+4. Connect your GitHub account and select this repository.
+5. Render will automatically detect the `render.yaml` file in the root directory and spin up the `carbonsense-backend` service.
+6. Once deployed, copy your new backend URL (e.g., `https://carbonsense-backend.onrender.com`).
+
+### 2. Deploy the Frontend to Vercel
+Vercel is the optimal hosting platform for Vite/React applications.
+1. Sign up/Log in to [Vercel](https://vercel.com).
+2. Click **Add New...** -> **Project**.
+3. Import your GitHub repository. Vercel will automatically detect that it's a Vite project.
+4. **Important**: Change the **Root Directory** from the default `/` to `frontend`.
+5. Under **Environment Variables**, add:
+   - `VITE_API_URL` = Your Render Backend URL (e.g., `https://carbonsense-backend.onrender.com`)
+6. Click **Deploy**. The `vercel.json` file ensures routing works flawlessly.
+
+### 3. Finalize CORS Settings
+Once your Vercel frontend is live, you must tell your Render backend to accept requests from it:
+1. Go to your Render Dashboard -> carbonsense-backend -> **Environment**.
+2. Update the `ALLOWED_ORIGINS` variable to match your Vercel domain (e.g., `https://your-app.vercel.app`).
+3. Your full stack is now live!
+
+---
+
+## 🧪 Testing
 
 ### Backend Tests
 Execute pytest from the `/backend` directory:
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
-*Current test suite: **52 tests passing (100%)** with **87% statement coverage**.*
 
 ### Frontend Tests
 Execute vitest from the `/frontend` directory:
 ```bash
 npm run test:run
 ```
-*Current test suite: **21 tests passing (100%)**.*
 
 ---
 
-## 📦 Docker Container Setup
-To run the full stack (Frontend + Backend) inside containers:
-```bash
-docker-compose up --build
-```
-This launches the backend service at `http://localhost:8000` with volume mapping for local sqlite storage.
+## 🛡️ Security Note
+
+**Never commit your `.env` files to GitHub.** Both the `frontend` and `backend` directories have `.gitignore` files configured to ignore `.env` securely. Use the `.env.example` files as templates when cloning the repo.
 
 ---
-
-## 📝 Design & Architecture Decisions
-
-- **Database WAL Mode**: SQLite runs in Write-Ahead Logging (`WAL`) mode with a high timeout threshold to prevent `database is locked` contention during concurrent SSE stream writes and user activity logs.
-- **Robust Insights Caching**: Analysis and planning outcomes are cached for 24 hours to optimize token cost, while coaching chat interactions remain fully interactive and non-cached.
-- **Tailwind CSS styling**: The user interface uses a harmonized dark slate and emerald green theme with card-based glassmorphism design, delivering a premium look.

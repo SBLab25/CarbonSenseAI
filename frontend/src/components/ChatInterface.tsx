@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Leaf, Send, Sparkles, AlertCircle, RefreshCw, User, MessageSquare } from 'lucide-react';
 import { useStream } from '../hooks/useStream';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,6 +15,7 @@ interface Message {
 
 export const ChatInterface: React.FC<{ userId: string }> = ({ userId }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   
@@ -81,11 +85,26 @@ export const ChatInterface: React.FC<{ userId: string }> = ({ userId }) => {
       .slice(-10)
       .map((msg) => ({ role: msg.role, content: msg.content }));
 
-    startStream(api.chat.streamUrl, {
-      user_id: userId,
-      message: text,
-      history: history,
-    });
+    startStream(
+      api.chat.streamUrl, 
+      {
+        user_id: userId,
+        message: text,
+        history: history,
+      },
+      {
+        onMessageSplit: (msg) => {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: msg, timestamp: new Date() },
+          ]);
+        },
+        onUpdateDashboard: () => {
+          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['missions'] });
+        }
+      }
+    );
   };
 
   const triggerAnalysis = () => {
@@ -99,9 +118,24 @@ export const ChatInterface: React.FC<{ userId: string }> = ({ userId }) => {
 
     setMessages((prev) => [...prev, userMsg]);
 
-    startStream(api.agents.analyzeUrl, {
-      user_id: userId,
-    });
+    startStream(
+      api.agents.analyzeUrl, 
+      {
+        user_id: userId,
+      },
+      {
+        onMessageSplit: (msg) => {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: msg, timestamp: new Date() },
+          ]);
+        },
+        onUpdateDashboard: () => {
+          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['missions'] });
+        }
+      }
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -125,7 +159,7 @@ export const ChatInterface: React.FC<{ userId: string }> = ({ userId }) => {
             <h2 className="text-sm font-bold text-white tracking-wide">AI Sustainability Coach</h2>
             <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-              Online • Gemini 1.5 Chained Agents
+              Online • Gemini Chained Agents
             </p>
           </div>
         </div>
@@ -179,12 +213,23 @@ export const ChatInterface: React.FC<{ userId: string }> = ({ userId }) => {
             </div>
 
             {/* Bubble */}
-            <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+            <div className={`rounded-2xl px-4 py-2.5 text-sm ${
               msg.role === 'user'
                 ? 'bg-emerald-600 text-white rounded-tr-none'
                 : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
             }`}>
-              {msg.content}
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed whitespace-pre-wrap" {...props} />,
+                  strong: ({node, ...props}) => <strong className="font-bold text-emerald-400" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="text-base font-bold mt-5 mb-2 text-white border-b border-slate-800 pb-1" {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />,
+                  li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                }}
+              >
+                {msg.content}
+              </ReactMarkdown>
             </div>
           </div>
         ))}
@@ -195,8 +240,19 @@ export const ChatInterface: React.FC<{ userId: string }> = ({ userId }) => {
             <div className="p-2 h-9 w-9 rounded-xl flex items-center justify-center shrink-0 border bg-emerald-950/20 border-emerald-900/20 text-emerald-400">
               <Leaf size={16} />
             </div>
-            <div className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none">
-              {content}
+            <div className="rounded-2xl px-4 py-2.5 text-sm bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed whitespace-pre-wrap inline" {...props} />,
+                  strong: ({node, ...props}) => <strong className="font-bold text-emerald-400" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="text-base font-bold mt-5 mb-2 text-white border-b border-slate-800 pb-1" {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />,
+                  li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                }}
+              >
+                {content}
+              </ReactMarkdown>
               <span className="inline-block w-1.5 h-3.5 ml-1 bg-emerald-400 animate-pulse"></span>
             </div>
           </div>

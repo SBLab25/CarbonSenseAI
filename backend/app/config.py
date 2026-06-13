@@ -9,10 +9,11 @@ from pydantic_settings import (
 
 class Settings(BaseSettings):
     gemini_api_key: str
+    groq_api_key: str = ""
     database_url: str = "./carbonsense.db"
     allowed_origins: List[str]
     rate_limit_chat_rpm: int = 10
-    rate_limit_analyze_rph: int = 3
+    rate_limit_analyze_rph: int = 300
     rate_limit_nl_rpm: int = 20
     app_env: str = "development"
 

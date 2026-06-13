@@ -67,22 +67,22 @@ export const MissionCard: React.FC<MissionCardProps> = ({
   const isActive = mission.status === 'active' && !isExpired;
 
   return (
-    <div className={`relative overflow-hidden bg-slate-900/60 rounded-2xl border p-5 shadow-lg backdrop-blur-md transition-all duration-300 ${
+    <div className={`relative overflow-hidden bg-white dark:bg-slate-900/60 rounded-2xl border p-5 shadow-sm dark:shadow-lg backdrop-blur-md transition-all duration-300 ${
       isCompleted 
-        ? 'border-emerald-500/30 bg-emerald-950/5' 
+        ? 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/5' 
         : isExpired 
-        ? 'border-slate-800 opacity-60' 
-        : 'border-slate-800 hover:border-slate-700 hover:scale-[1.01]'
+        ? 'border-slate-200 dark:border-slate-800 opacity-60' 
+        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.01]'
     }`}>
       {/* Category Accent Indicator */}
-      <div className="absolute top-0 left-0 w-1 h-full bg-slate-800"></div>
+      <div className="absolute top-0 left-0 w-1 h-full bg-slate-200 dark:bg-slate-800"></div>
 
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-slate-800 rounded-xl">
+          <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl">
             {getCategoryIcon(mission.category)}
           </div>
-          <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
             {getCategoryEmoji(mission.category)} {mission.category}
           </span>
         </div>
@@ -95,12 +95,12 @@ export const MissionCard: React.FC<MissionCardProps> = ({
       </div>
 
       <div className="mt-4">
-        <h4 className="text-base font-bold text-white leading-tight">{mission.title}</h4>
-        <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{mission.description}</p>
+        <h4 className="text-base font-bold text-slate-800 dark:text-white leading-tight">{mission.title}</h4>
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">{mission.description}</p>
       </div>
 
       {/* Impact stats & deadline */}
-      <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+      <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
         {mission.target_reduction_kg && (
           <div className="flex items-center gap-1.5">
             <span className="text-emerald-400 font-semibold">
@@ -112,7 +112,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({
 
         {/* Countdown */}
         {deadlineLabel && (
-          <div className={`flex items-center gap-1 ${isExpired ? 'text-red-400' : 'text-slate-400'}`}>
+          <div className={`flex items-center gap-1 ${isExpired ? 'text-rose-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}`}>
             <Clock size={12} />
             <span className="font-medium">{deadlineLabel}</span>
           </div>
@@ -132,7 +132,7 @@ export const MissionCard: React.FC<MissionCardProps> = ({
           <button
             onClick={() => onAccept(mission.id)}
             disabled={isActionLoading}
-            className="w-full py-2 bg-slate-850 hover:bg-slate-800 text-white disabled:opacity-50 text-xs font-bold rounded-xl border border-slate-700 transition-colors shadow-md"
+            className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-800 dark:text-white disabled:opacity-50 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors shadow-md"
           >
             Accept Challenge
           </button>
@@ -149,13 +149,13 @@ export const MissionCard: React.FC<MissionCardProps> = ({
         )}
 
         {isExpired && (
-          <div className="w-full text-center py-2 bg-slate-850 text-slate-500 text-xs font-semibold rounded-xl border border-slate-800 select-none">
+          <div className="w-full text-center py-2 bg-slate-50 dark:bg-slate-850 text-slate-400 dark:text-slate-500 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 select-none">
             Challenge Expired
           </div>
         )}
 
         {isCompleted && (
-          <div className="w-full text-center py-2 bg-emerald-950/10 text-emerald-400 border border-emerald-900/20 text-xs font-bold rounded-xl select-none flex items-center justify-center gap-1">
+          <div className="w-full text-center py-2 bg-emerald-50 dark:bg-emerald-950/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/20 text-xs font-bold rounded-xl select-none flex items-center justify-center gap-1">
             <CheckCircle2 size={12} />
             <span>Challenge Achieved</span>
           </div>

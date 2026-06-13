@@ -19,8 +19,21 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${BASE_URL}${path}`;
+  
+  const aiConfigStr = localStorage.getItem('ai_config');
+  const aiHeaders: Record<string, string> = {};
+  if (aiConfigStr) {
+    try {
+      const config = JSON.parse(aiConfigStr);
+      if (config.provider) aiHeaders['X-AI-Provider'] = config.provider;
+      if (config.apiKey) aiHeaders['X-AI-Key'] = config.apiKey;
+      if (config.model) aiHeaders['X-AI-Model'] = config.model;
+    } catch {}
+  }
+
   const headers = {
     'Content-Type': 'application/json',
+    ...aiHeaders,
     ...(options?.headers || {}),
   };
 
@@ -53,6 +66,9 @@ export const api = {
     update: (userId: string, data: UserCreate) => request<UserProfile>(`/api/v1/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    }),
+    wipeData: (userId: string) => request<{ status: string; message: string }>(`/api/v1/users/${userId}/data`, {
+      method: 'DELETE',
     }),
   },
   onboarding: {

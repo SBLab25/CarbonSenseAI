@@ -46,16 +46,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
     return (
       <div className="space-y-6 animate-pulse">
         {/* Row 1 skeleton */}
-        <div className="h-32 bg-slate-900/40 rounded-2xl border border-slate-800 p-6"></div>
+        <div className="h-32 bg-slate-100 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-6"></div>
         {/* Row 2 skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-[320px] bg-slate-900/40 rounded-2xl border border-slate-800 p-6"></div>
-          <div className="h-[320px] bg-slate-900/40 rounded-2xl border border-slate-800 p-6"></div>
+          <div className="h-[320px] bg-slate-100 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-6"></div>
+          <div className="h-[320px] bg-slate-100 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-6"></div>
         </div>
         {/* Row 3 skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-40 bg-slate-900/40 rounded-2xl border border-slate-800 p-6"></div>
-          <div className="h-40 bg-slate-900/40 rounded-2xl border border-slate-800 p-6"></div>
+          <div className="h-40 bg-slate-100 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-6"></div>
+          <div className="h-40 bg-slate-100 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-6"></div>
         </div>
       </div>
     );
@@ -92,18 +92,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   return (
     <div className="space-y-6">
       {/* Row 1: Monthly footprint metric card */}
-      <div className="relative overflow-hidden bg-slate-900/60 rounded-2xl border border-slate-800 p-6 shadow-xl backdrop-blur-md">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl transform translate-x-20 -translate-y-20"></div>
+      <div className="relative overflow-hidden bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-xl backdrop-blur-md">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl transform translate-x-20 -translate-y-20"></div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">This Month's Footprint</h2>
+            <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">This Month's Footprint</h2>
             <div className="flex items-baseline gap-3 mt-1.5">
-              <span className="text-4xl font-extrabold text-white tracking-tight">
+              <span className="text-4xl font-extrabold text-slate-800 dark:text-white tracking-tight">
                 {formatKg(summary?.total_kg || 0)}
               </span>
               {summary && summary.baseline_kg > 0 && (
                 <div className={`flex items-center gap-0.5 text-sm font-bold px-2 py-0.5 rounded-full ${
-                  isReduced ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                  isReduced ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
                 }`}>
                   {isReduced ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
                   <span>{Math.abs(reduction).toFixed(1)}% vs baseline</span>
@@ -112,18 +112,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
             </div>
             {summary && (
               <p className="text-xs text-slate-500 mt-2">
-                Equivalent to <span className="font-semibold text-slate-300">{summary.vs_india_average_pct.toFixed(0)}%</span> of the Indian national average monthly footprint (158 kg CO₂).
+                Equivalent to <span className="font-semibold text-slate-700 dark:text-slate-300">{summary.vs_india_average_pct.toFixed(0)}%</span> of the Indian national average monthly footprint (158 kg CO₂).
               </p>
             )}
           </div>
           
-          <div className="flex items-center gap-4 bg-slate-800/40 p-4 rounded-xl border border-slate-800">
-            <div className="p-3 bg-emerald-600/20 text-emerald-400 rounded-lg">
+          <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
               <Leaf size={24} />
             </div>
             <div>
-              <p className="text-xs text-slate-400">Baseline Carbon</p>
-              <p className="text-lg font-bold text-white mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Baseline Carbon</p>
+              <p className="text-lg font-bold text-slate-800 dark:text-white mt-0.5">
                 {formatKg(summary?.baseline_kg || userProfile?.baseline_footprint_kg || 0)}
               </p>
             </div>
@@ -133,15 +133,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
 
       {/* Row 2: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-5 bg-slate-900/60 rounded-2xl border border-slate-800 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between">
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Carbon Breakdown</h3>
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-xl backdrop-blur-md flex flex-col justify-between">
+          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Carbon Breakdown</h3>
           <div className="flex-1 flex items-center justify-center">
             <FootprintPieChart breakdown={summary?.breakdown || {}} totalKg={summary?.total_kg || 0} />
           </div>
         </div>
         
-        <div className="lg:col-span-7 bg-slate-900/60 rounded-2xl border border-slate-800 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between">
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Emissions Over Time</h3>
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-xl backdrop-blur-md flex flex-col justify-between">
+          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Emissions Over Time</h3>
           <div className="flex-1">
             <TrendLineChart trends={trends || []} selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
           </div>
@@ -155,28 +155,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
           targetPct={userProfile?.monthly_target_reduction_pct || 15.0} 
         />
         
-        <div className="flex flex-col bg-slate-900/60 rounded-2xl border border-slate-800 p-5 shadow-lg relative overflow-hidden group">
+        <div className="flex flex-col bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm dark:shadow-lg relative overflow-hidden group">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <span className="text-sm font-semibold text-slate-400">Highest Carbon Hotspot</span>
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">Highest Carbon Hotspot</span>
               {primaryHotspot ? (
-                <h4 className="text-xl font-bold text-white mt-1 capitalize flex items-center gap-2">
+                <h4 className="text-xl font-bold text-slate-800 dark:text-white mt-1 capitalize flex items-center gap-2">
                   {getHotspotIcon(primaryHotspot)}
                   <span>{primaryHotspot}</span>
                 </h4>
               ) : (
-                <h4 className="text-xl font-bold text-white mt-1">No hotspots yet</h4>
+                <h4 className="text-xl font-bold text-slate-800 dark:text-white mt-1">No hotspots yet</h4>
               )}
             </div>
             {primaryHotspot && (
-              <span className="text-xs font-semibold px-2 py-0.5 bg-slate-800 text-slate-300 rounded-full">
+              <span className="text-xs font-semibold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full">
                 {formatKg(primaryHotspotKg)}
               </span>
             )}
           </div>
           
-          <div className="flex-1 flex items-center mt-2 p-3.5 bg-emerald-950/20 border border-emerald-900/20 rounded-xl">
-            <p className="text-xs text-emerald-300/90 leading-relaxed font-medium">
+          <div className="flex-1 flex items-center mt-2 p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/20 rounded-xl">
+            <p className="text-xs text-emerald-700 dark:text-emerald-300/90 leading-relaxed font-medium">
               {aiTip}
             </p>
           </div>
