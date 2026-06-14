@@ -9,6 +9,7 @@ class GeminiError(Exception):
         self.log_detail = log_detail
 
 class UserCreate(BaseModel):
+    id: Optional[str] = None
     name: str
     country: Optional[str] = None
     city: Optional[str] = None

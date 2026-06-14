@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Leaf, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { setUserId } from '../lib/user-session';
+import { useAuth } from '../context/AuthContext';
 
 export default function OnboardingFlow() {
   const navigate = useNavigate();
@@ -60,13 +61,18 @@ export default function OnboardingFlow() {
     setCurrentStep(prev => prev - 1);
   };
 
+  const { user } = useAuth();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     try {
+      if (!user) throw new Error("Not authenticated. Please sign in first.");
+
       // 1. Create user profile
       const userRes = await api.users.create({
+        id: user.id,
         name: formData.name,
         country: formData.country,
         city: formData.city,
@@ -79,11 +85,11 @@ export default function OnboardingFlow() {
         monthly_target_reduction_pct: formData.monthly_target_reduction_pct
       });
 
-      // 2. Save session
-      setUserId(userRes.user_id);
+      // 2. Trigger baseline calculation
+      await api.onboarding.baseline({ user_id: user.id });
 
-      // 3. Trigger baseline calculation
-      await api.onboarding.baseline({ user_id: userRes.user_id });
+      // 3. Save a flag indicating onboarding is complete so ProtectedRoute knows
+      setUserId(user.id);
 
       // 4. Redirect to dashboard
       navigate('/dashboard');

@@ -10,7 +10,7 @@ router = APIRouter(tags=["users"])
 
 @router.post("/users", response_model=UserResponse)
 async def create_user(user_in: UserCreate, db: aiosqlite.Connection = Depends(get_db)):
-    user_id = str(uuid.uuid4())
+    user_id = user_in.id if user_in.id else str(uuid.uuid4())
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     await db.execute(

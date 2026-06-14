@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Leaf, Home, MessageSquare, PlusCircle, Trophy, LogOut, Settings, Users, Medal } from 'lucide-react';
 import { clearUserId, hasSession } from '../lib/user-session';
+import { useAuth } from '../context/AuthContext';
 import EcoPointsBadge from './EcoPointsBadge';
 import SettingsModal from './SettingsModal';
 
@@ -32,9 +33,14 @@ export default function Layout() {
     }
   }, [theme]);
 
-  const handleLogout = () => {
-    clearUserId();
-    navigate('/');
+  const { user, signOut, isLoading } = useAuth();
+  // We still check hasSession to ensure onboarding was finished
+  const onboardingCompleted = hasSession();
+
+  const handleLogout = async () => {
+    await signOut();
+    clearUserId(); // Also clear the local onboarding marker
+    navigate('/auth');
   };
 
   const navItems = [
@@ -46,7 +52,11 @@ export default function Layout() {
     { name: 'Leaderboard', to: '#leaderboard', icon: Medal, phase2: true },
   ];
 
-  if (!hasSession()) {
+  if (isLoading) {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-emerald-500">Loading...</div>;
+  }
+
+  if (!user || !onboardingCompleted) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <header className="w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md transition-colors duration-300">
@@ -59,6 +69,16 @@ export default function Layout() {
                 CarbonSense <span className="font-light text-slate-500 dark:text-slate-400">AI</span>
               </span>
             </Link>
+            
+            {!user ? (
+              <Link to="/auth" className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold rounded-xl hover:scale-105 transition-transform">
+                Sign In
+              </Link>
+            ) : (
+              <button onClick={handleLogout} className="px-4 py-2 bg-rose-500/10 text-rose-500 text-sm font-bold rounded-xl hover:bg-rose-500/20 transition-colors">
+                Sign Out
+              </button>
+            )}
           </div>
         </header>
         <main className="flex-1 w-full mx-auto">
