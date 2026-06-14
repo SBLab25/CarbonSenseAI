@@ -60,16 +60,33 @@ Average Indian: 158 kg CO2/month. Be conservative — underestimate is better th
         # Serialize profile fields manually or via model_dump
         profile_json = json.dumps(profile.model_dump(), default=str)
         
-        result = await gemini_service.function_call(
-            system_prompt=system_prompt,
-            user_message=profile_json,
-            function_schema=BASELINE_SCHEMA
-        )
-        
-        return FootprintSummary(
-            total_kg=float(result.get("monthly_total_kg", 0.0)),
-            transport_kg=float(result.get("transport_kg", 0.0)),
-            energy_kg=float(result.get("energy_kg", 0.0)),
-            food_kg=float(result.get("food_kg", 0.0)),
-            shopping_kg=float(result.get("shopping_kg", 0.0))
-        )
+        try:
+            result = await gemini_service.function_call(
+                system_prompt=system_prompt,
+                user_message=profile_json,
+                function_schema=BASELINE_SCHEMA
+            )
+            
+            return FootprintSummary(
+                total_kg=float(result.get("monthly_total_kg", 0.0)),
+                transport_kg=float(result.get("transport_kg", 0.0)),
+                energy_kg=float(result.get("energy_kg", 0.0)),
+                food_kg=float(result.get("food_kg", 0.0)),
+                shopping_kg=float(result.get("shopping_kg", 0.0))
+            )
+        except Exception as e:
+            print(f"Fallback baseline calculation used due to AI error: {e}")
+            transport_kg = float(profile.weekly_transport_km or 0) * 4 * 0.21
+            energy_kg = float(profile.monthly_electricity_kwh or 0) * 0.708
+            diet_multipliers = {"Vegan": 100, "Vegetarian": 120, "Mixed": 180, "High Meat": 250}
+            food_kg = float(diet_multipliers.get(profile.diet_type, 180))
+            shopping_kg = 50.0
+            total_kg = transport_kg + energy_kg + food_kg + shopping_kg
+            
+            return FootprintSummary(
+                total_kg=total_kg,
+                transport_kg=transport_kg,
+                energy_kg=energy_kg,
+                food_kg=food_kg,
+                shopping_kg=shopping_kg
+            )
