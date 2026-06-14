@@ -8,7 +8,7 @@ from pydantic_settings import (
 )
 
 class Settings(BaseSettings):
-    gemini_api_key: str
+    gemini_api_key: str = ""
     groq_api_key: str = ""
     database_url: str = "./carbonsense.db"
     allowed_origins: List[str]
