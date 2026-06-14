@@ -31,11 +31,23 @@ export function useStream() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    const aiConfigStr = localStorage.getItem('ai_config');
+    const aiHeaders: Record<string, string> = {};
+    if (aiConfigStr) {
+      try {
+        const config = JSON.parse(aiConfigStr);
+        if (config.provider) aiHeaders['X-AI-Provider'] = config.provider;
+        if (config.apiKey) aiHeaders['X-AI-Key'] = config.apiKey;
+        if (config.model) aiHeaders['X-AI-Model'] = config.model;
+      } catch {}
+    }
+
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...aiHeaders,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
