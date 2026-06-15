@@ -48,7 +48,7 @@ export default function Landing() {
       <div className="text-center max-w-3xl mx-auto space-y-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 rounded-full font-medium text-xs border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
           <Leaf size={12} className="animate-pulse" />
-          <span>Powered by Gemini 1.5 Flash</span>
+          <span>Powered by AI</span>
         </div>
         
         <h1 className="text-4xl md:text-6xl font-black tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
