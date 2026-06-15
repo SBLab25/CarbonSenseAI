@@ -31,7 +31,7 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
     }
   };
 
-  const hasData = trends.some((item) => item.total_kg > 0);
+  const hasData = trends.some((item) => item.total_kg !== 0);
 
   const ranges = [
     { label: '7d', value: 7 },

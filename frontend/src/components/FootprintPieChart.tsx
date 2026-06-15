@@ -19,6 +19,14 @@ export const FootprintPieChart: React.FC<FootprintPieChartProps> = ({ breakdown,
     .filter((item) => item.value > 0);
 
   if (data.length === 0) {
+    if (totalKg < 0) {
+      return (
+        <div className="flex h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-6 text-center text-emerald-600 dark:text-emerald-400">
+          <p className="text-lg font-bold">🌍 Net Negative!</p>
+          <p className="mt-1 text-xs opacity-80">Your eco-missions have offset all your emissions.</p>
+        </div>
+      );
+    }
     return (
       <div className="flex h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6 text-center text-slate-500 dark:text-slate-400">
         <p className="text-sm font-medium">No activity data yet</p>
