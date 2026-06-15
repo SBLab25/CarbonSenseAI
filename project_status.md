@@ -47,6 +47,12 @@
 ### Phase 15: Setup & Documentation
 - **Root Documentation**: `README.md` defining features, architecture, factors, and execution commands.
 
+### Phase 16: Production Database & Deployment
+- **Supabase Auth**: Integrated Supabase Auth (`AuthContext.tsx`, `AuthPage.tsx`) to manage users securely.
+- **Supabase PostgreSQL**: Migrated the database connection string from SQLite to Supabase's IPv4 transaction pooler (`psycopg` async integration).
+- **Backend Deployment**: Successfully deployed the FastAPI backend to Render.
+- **Frontend Deployment**: Deployed the Vite React frontend to Vercel connected to the Render API and Supabase Auth.
+
 ---
 
 ## 🐞 Technical Issues & Error Resolutions
@@ -58,12 +64,15 @@
 | **Frontend Tests** | `Unable to find element with text 'Car petrol'` | Case-sensitive text query matched a capitalized element in the DOM differently. | Updated the matcher queries to use case-insensitive regular expressions `/car petrol/i`. |
 | **Frontend Build** | `TS18048: 'summary' is possibly 'undefined'` | Operator precedence in `primaryHotspot` evaluation evaluated null properties incorrectly. | Wrapped the fallback expression inside parentheses to enforce correct evaluation hierarchy. |
 | **Tailwind CSS** | CSS compilation failed on `border-border` | Tailwind CSS v4 did not load the legacy `tailwind.config.ts` configuration by default. | Installed `@tailwindcss/postcss`, updated `postcss.config.js` and added `@config "../tailwind.config.ts";` in `index.css`. |
+| **Deployment** | `Network is unreachable` to `db.*.supabase.co` | Render environments do not support outbound IPv6 which is the default resolution for direct Supabase URLs. | Switched to the Supabase IPv4 Transaction Connection Pooler (`aws-1-...pooler.supabase.com:6543`). |
+| **Auth** | `Invalid path specified in request URL` on login | The `VITE_SUPABASE_URL` in Vercel included `/rest/v1` appended to the host. | Reconfigured the environment variable to only include the base host. |
+| **Backend** | `unable to open database file` during AI pipeline | The `InsightsCache` service was hardcoded to use `aiosqlite.connect` instead of the multi-dialect db wrapper. | Refactored `insights_cache.py` to use `get_db_context()` to support PostgreSQL. |
 
 ---
 
 ## 🔮 What to Do Next
 
-1. **Production Deployment**: Deploy the frontend React app to Vercel/Netlify and backend FastAPI service to Render/Fly.io.
-2. **Setup Staging Database**: Migrate the SQLite database setup to a production PostgreSQL instance (e.g. Supabase) by replacing connection strings.
-3. **Verify CORS Policies**: Ensure production allowed origins are updated in the `.env` settings.
-4. **Acquire Live Gemini API Key**: Replace the local testing API keys with a production Google AI Studio key.
+1. **Monitor Production Usage**: Keep an eye on Gemini API limits, Render server logs, and Supabase database metrics.
+2. **Setup Custom Domains**: Connect custom domains to the Vercel frontend and Render backend endpoints.
+3. **Advanced Leaderboards**: Further expand the gamification engine by adding team/company-based leaderboards.
+4. **Enhanced Data Visualizations**: Integrate libraries like D3.js to build more interactive user footprint heatmaps over time.

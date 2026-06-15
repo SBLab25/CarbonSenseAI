@@ -18,7 +18,8 @@ CarbonSense AI is a multi-agent carbon footprint coaching platform built for **P
 ## 🛠️ Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, `@tanstack/react-query`, Recharts, Lucide Icons, and Vitest.
-- **Backend**: FastAPI (Python 3.11+), SQLite (via `aiosqlite` for async I/O), Pydantic v2, and Pytest.
+- **Backend**: FastAPI (Python 3.11+), PostgreSQL (via `psycopg` async) with SQLite fallback, Pydantic v2, and Pytest.
+- **Authentication**: Supabase Auth integration for secure user management.
 - **AI Integration**: Custom Provider Abstraction supporting Groq, Gemini, OpenAI, Anthropic, and OpenRouter via SDKs and direct REST calls.
 - **Environment & Dev**: Docker Compose, GitHub Actions.
 
@@ -131,7 +132,8 @@ Render provides a great free tier for Dockerized FastAPI apps.
 3. Click **New +** -> **Blueprint**.
 4. Connect your GitHub account and select this repository.
 5. Render will automatically detect the `render.yaml` file in the root directory and spin up the `carbonsense-backend` service.
-6. Once deployed, copy your new backend URL (e.g., `https://carbonsense-backend.onrender.com`).
+6. Under your new service, set the `DATABASE_URL` environment variable to your **Supabase IPv4 Connection Pooler** string (Transaction Mode, Port 6543).
+7. Once deployed, copy your new backend URL (e.g., `https://carbonsense-backend.onrender.com`).
 
 ### 2. Deploy the Frontend to Vercel
 Vercel is the optimal hosting platform for Vite/React applications.
@@ -141,6 +143,8 @@ Vercel is the optimal hosting platform for Vite/React applications.
 4. **Important**: Change the **Root Directory** from the default `/` to `frontend`.
 5. Under **Environment Variables**, add:
    - `VITE_API_URL` = Your Render Backend URL (e.g., `https://carbonsense-backend.onrender.com`)
+   - `VITE_SUPABASE_URL` = Your Supabase Project Base URL (e.g., `https://xyz.supabase.co`)
+   - `VITE_SUPABASE_ANON_KEY` = Your Supabase Anon Public Key
 6. Click **Deploy**. The `vercel.json` file ensures routing works flawlessly.
 
 ### 3. Finalize CORS Settings

@@ -33,7 +33,7 @@ CarbonSense AI (Monorepo)
 
 ## 💾 Database Schema Details
 
-SQLite is configured in **Write-Ahead Logging (WAL)** mode (`PRAGMA journal_mode=WAL;`) with a 30.0s connection busy timeout to handle concurrent transactional workloads.
+The database layer abstracts connections using `app.db.database.py` which dynamically supports **PostgreSQL (Supabase)** via `psycopg` (for production) and **SQLite** via `aiosqlite` (for local development/fallback). The application uses custom SQL dialect translation (e.g. `strftime` to `to_char`, `?` to `%s`) to allow raw SQL to run on both database engines seamlessly. SQLite is configured in **Write-Ahead Logging (WAL)** mode.
 
 ### Tables
 1. **`users`**:
