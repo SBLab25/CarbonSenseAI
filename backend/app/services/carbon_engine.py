@@ -82,7 +82,7 @@ def calculate_monthly_summary(activities: list[dict], baseline_kg: float) -> Foo
     
     for act in activities:
         cat = act.get("category", "").lower().strip()
-        co2 = act.get("co2_kg", 0.0)
+        co2 = float(act.get("co2_kg", 0.0))
         if cat == "transport":
             transport_kg += co2
         elif cat == "energy":

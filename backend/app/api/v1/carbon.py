@@ -71,7 +71,8 @@ async def get_carbon_trends(user_id: str, days: int = 30, db: aiosqlite.Connecti
     daily_totals = {}
     for r in rows:
         if r["date_str"]:
-            daily_totals[r["date_str"]] = r["total_kg"]
+            date_key = str(r["date_str"]) if not isinstance(r["date_str"], str) else r["date_str"]
+            daily_totals[date_key] = float(r["total_kg"])
             
     trends = calculate_trend(daily_totals, days)
     return trends
@@ -92,7 +93,7 @@ async def get_carbon_progress(user_id: str, db: aiosqlite.Connection = Depends(g
         (user_id,)
     ) as cursor:
         row = await cursor.fetchone()
-    current_kg = row["total"] if row and row["total"] is not None else 0.0
+    current_kg = float(row["total"]) if row and row["total"] is not None else 0.0
     
     progress_pct = calculate_progress(current_kg, baseline_kg)
     
