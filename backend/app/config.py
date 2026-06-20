@@ -8,7 +8,7 @@ from pydantic_settings import (
 )
 
 class Settings(BaseSettings):
-    gemini_api_key: str = ""
+    gemini_api_key: str
     groq_api_key: str = ""
     database_url: str = "./carbonsense.db"
     allowed_origins: List[str]
@@ -29,6 +29,17 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
+
+    @field_validator("gemini_api_key")
+    @classmethod
+    def gemini_key_must_not_be_empty(cls, v: str) -> str:
+        """Ensure a Gemini API key is provided before the server starts."""
+        if not v or not v.strip():
+            raise ValueError(
+                "GEMINI_API_KEY is required. "
+                "Get a free key at https://ai.google.dev"
+            )
+        return v.strip()
 
     @classmethod
     def settings_customise_sources(
