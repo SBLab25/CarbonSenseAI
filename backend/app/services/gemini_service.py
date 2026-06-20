@@ -9,7 +9,10 @@ SDK directly.
 import json
 import asyncio
 from typing import AsyncGenerator
-from groq import AsyncGroq
+try:
+    from groq import AsyncGroq
+except ImportError:
+    AsyncGroq = None
 from openai import AsyncOpenAI
 import google.generativeai as genai
 
