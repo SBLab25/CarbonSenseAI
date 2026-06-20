@@ -1,5 +1,21 @@
+/**
+ * useStream — custom React hook for Server-Sent Events (SSE) streaming.
+ *
+ * Manages the full lifecycle of an SSE connection: opening, reading tokens,
+ * handling sentinels ([PIPELINE_COMPLETE], [ERROR]), and cleanup on abort.
+ * Reads AI provider config from localStorage and forwards it as request headers.
+ */
 import { useState, useRef, useCallback, useEffect } from 'react';
 
+/**
+ * Hook for consuming a streaming POST endpoint via SSE.
+ *
+ * @returns content     - Accumulated text received so far
+ * @returns isStreaming - True while the stream is active
+ * @returns error       - Error message if the stream failed, else null
+ * @returns startStream - Function to initiate a new stream
+ * @returns reset       - Function to abort and clear all stream state
+ */
 export function useStream() {
   const [content, setContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -17,6 +33,13 @@ export function useStream() {
     setError(null);
   }, []);
 
+  /**
+   * Initiate a streaming request to the given endpoint.
+   *
+   * @param endpoint  - API path relative to VITE_API_URL (e.g. "/api/v1/agents/analyze")
+   * @param body      - Request body serialised to JSON
+   * @param callbacks - Optional callbacks: onMessageSplit, onUpdateDashboard
+   */
   const startStream = useCallback(async (
     endpoint: string, 
     body: object, 

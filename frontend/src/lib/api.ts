@@ -1,3 +1,10 @@
+/**
+ * CarbonSense AI — typed API client.
+ *
+ * All HTTP requests to the FastAPI backend go through the request() helper.
+ * AI provider headers (X-AI-Provider, X-AI-Key, X-AI-Model) are injected
+ * automatically from localStorage when present.
+ */
 import {
   UserCreate,
   UserResponse,
@@ -18,6 +25,14 @@ import {
 const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const BASE_URL = rawBaseUrl.replace(/\/+$/, '');
 
+/**
+ * Make a typed HTTP request to the CarbonSense API.
+ *
+ * @param path    - API path relative to BASE_URL (e.g. "/api/v1/users")
+ * @param options - Standard RequestInit options (method, body, headers)
+ * @returns       Parsed JSON response typed as T
+ * @throws        Error with the API's detail message if the response is not ok
+ */
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${BASE_URL}${path}`;
   
