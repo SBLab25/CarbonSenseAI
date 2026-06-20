@@ -1,3 +1,11 @@
+"""
+Baseline Agent — runs once at user onboarding.
+
+Estimates the user's monthly CO₂ footprint from their lifestyle profile
+before any activities are logged. This establishes the reference point
+for all future progress calculations.
+"""
+
 import json
 from app.models.schemas import UserProfile, FootprintSummary
 from app.services import gemini_service
@@ -50,7 +58,22 @@ BASELINE_SCHEMA = {
 }
 
 class BaselineAgent:
+    """Estimates initial carbon footprint from a lifestyle profile."""
     async def estimate(self, profile: UserProfile) -> FootprintSummary:
+        """
+        Estimate monthly CO₂ footprint from the user's onboarding profile.
+
+        Args:
+            profile: UserProfile populated from the onboarding wizard.
+
+        Returns:
+            FootprintSummary with estimated monthly totals per category
+            (transport, energy, food, shopping) and an overall total.
+
+        Raises:
+            GeminiError: If the Gemini function call fails or returns
+                         a response that fails schema validation.
+        """
         system_prompt = """You are a carbon footprint estimator. Given a user's lifestyle profile,
 estimate their monthly carbon footprint using standard emission factors.
 India electricity grid: 0.708 kg CO2/kWh. Car: ~0.21 kg/km.

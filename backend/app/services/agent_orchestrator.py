@@ -1,3 +1,13 @@
+"""
+Agent Orchestrator — coordinates the four-stage AI coaching pipeline.
+
+Runs agents sequentially: AnalystAgent → PlannerAgent → CoachAgent.
+Analyst and Planner outputs are cached for 24 hours per user and
+invalidated automatically when the user logs a new activity.
+The CoachAgent always runs fresh (never cached) to ensure coaching
+remains timely and relevant.
+"""
+
 import json
 from typing import AsyncGenerator
 from app.db.database import get_user_context
@@ -11,6 +21,13 @@ from app.models.schemas import AnalysisResult, PlanResult, GeminiError
 import datetime
 
 class AgentOrchestrator:
+    """
+    Lightweight sequential pipeline orchestrator.
+
+    Instantiated once at module level as a singleton and reused across
+    all incoming requests. Each agent receives only the typed Pydantic
+    output of the previous stage — no raw strings pass between agents.
+    """
     def __init__(self):
         self.baseline_agent = BaselineAgent()
         self.analyst_agent = AnalystAgent()
@@ -19,6 +36,20 @@ class AgentOrchestrator:
         self.cache = insights_cache
 
     async def run_pipeline(self, user_id: str) -> AsyncGenerator[str, None]:
+        """
+        Execute the Analyst → Planner → Coach pipeline for a user.
+
+        Serves cached Analyst and Planner results when available (24-hour TTL,
+        invalidated on new activity log). Always runs the Coach stage fresh.
+
+        Args:
+            user_id: The UUID of the user to analyse.
+
+        Yields:
+            str: Status tokens and Coach Agent response tokens for SSE.
+                 Final token is always "[PIPELINE_COMPLETE]".
+                 Error token format: "[ERROR] <user-safe message>".
+        """
         try:
             yield f"🔄 **[System]** Initiating Full AI Analysis for User {user_id[:8]}...\n"
             yield "[NEXT_MESSAGE]"
@@ -72,6 +103,16 @@ class AgentOrchestrator:
             yield f"[ERROR] System error during pipeline execution: {e}"
 
     async def _auto_generate_missions(self, user_id: str, plan: PlanResult):
+        """
+        Persist mission rows from the Planner's strategies to the database.
+
+        Skips strategies that already have an existing mission with the same
+        title to prevent duplicate missions on repeated pipeline runs.
+
+        Args:
+            user_id: Target user UUID.
+            plan:    PlanResult from PlannerAgent containing strategies.
+        """
         from app.db.database import get_db_context
         async with get_db_context() as db:
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

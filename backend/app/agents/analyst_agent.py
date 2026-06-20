@@ -1,3 +1,11 @@
+"""
+Carbon Analyst Agent — Stage 1 of the AI coaching pipeline.
+
+Calls Gemini via function calling to analyse the user's logged activity
+data and produce a structured AnalysisResult identifying carbon hotspots
+and observed behavioural patterns. Output is passed to PlannerAgent.
+"""
+
 import json
 from app.models.schemas import UserContext, AnalysisResult, HotspotDetail
 from app.services import gemini_service
@@ -68,7 +76,23 @@ ANALYZE_SCHEMA = {
 }
 
 class AnalystAgent:
+    """Analyses logged activities to surface CO₂ emission hotspots."""
     async def analyze(self, context: UserContext) -> AnalysisResult:
+        """
+        Identify carbon emission hotspots from the user's recent activity data.
+
+        Args:
+            context: UserContext containing profile, baseline, current footprint,
+                     and last-30-day activity records.
+
+        Returns:
+            AnalysisResult with primary hotspot, per-category breakdown,
+            observed behavioural patterns, and confidence level.
+
+        Raises:
+            GeminiError: If the Gemini function call fails or returns
+                         a response that fails Pydantic validation.
+        """
         system_prompt = """You are a carbon footprint analyst. Analyze actual activity data.
 Be specific — reference actual activities logged, not generic observations.
 Confidence: high if 20+ activities, medium if 5-19, low if fewer than 5.

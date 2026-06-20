@@ -1,3 +1,11 @@
+"""
+Planner Agent — Stage 2 of the AI coaching pipeline.
+
+Receives the AnalystAgent output and generates a ranked list of
+CO₂ reduction strategies tailored to the user's specific hotspots.
+Output is passed to CoachAgent and used to generate Mission Center items.
+"""
+
 import json
 from app.models.schemas import UserContext, AnalysisResult, PlanResult, ReductionStrategy
 from app.services import gemini_service
@@ -69,7 +77,23 @@ PLANNER_SCHEMA = {
 }
 
 class PlannerAgent:
+    """Generates personalised CO₂ reduction strategies from analyst output."""
     async def plan(self, context: UserContext, analysis: AnalysisResult) -> PlanResult:
+        """
+        Create a ranked reduction plan based on the analyst's findings.
+
+        Args:
+            context:  Full user context including profile and active goal.
+            analysis: AnalysisResult produced by AnalystAgent.
+
+        Returns:
+            PlanResult containing 3–5 ReductionStrategy objects ranked by
+            monthly CO₂ saving, plus a recommended goal percentage and
+            the single highest-impact action for the next 30 days.
+
+        Raises:
+            GeminiError: If the Gemini API call fails or returns invalid data.
+        """
         system_prompt = """You are a highly creative sustainability planner. Create EXACTLY 5 diverse, specific, and actionable carbon reduction strategies based strictly on the user's specific lifestyle and the analyst's findings.
 Do NOT use generic templates. Provide unique ideas tailored to their primary hotspot.
 Rank by monthly_saving_kg.

@@ -1,15 +1,37 @@
+"""
+Coach Agent — Stage 3 (final) of the AI coaching pipeline.
+
+Receives AnalysisResult and PlanResult and streams a personalised
+coaching message to the user via Server-Sent Events. Unlike the other
+agents, this agent uses standard streaming generation rather than
+function calling, so its output is natural language, not structured JSON.
+"""
+
 import json
 from typing import AsyncGenerator
 from app.models.schemas import UserContext, AnalysisResult, PlanResult
 from app.services import gemini_service
 
 class CoachAgent:
+    """Delivers personalised sustainability coaching via streaming SSE."""
     async def coach_stream(
         self,
         context: UserContext,
         analysis: AnalysisResult,
         plan: PlanResult
     ) -> AsyncGenerator[str, None]:
+        """
+        Stream a personalised coaching message based on analysis and plan.
+
+        Args:
+            context:  UserContext including profile and progress vs baseline.
+            analysis: AnalysisResult from AnalystAgent.
+            plan:     PlanResult from PlannerAgent.
+
+        Yields:
+            str: Individual text tokens as they arrive from the Gemini API.
+                 The caller is responsible for SSE framing.
+        """
         user_name = context.profile.name
         
         system_prompt = f"""You are {user_name}'s personal sustainability coach.
