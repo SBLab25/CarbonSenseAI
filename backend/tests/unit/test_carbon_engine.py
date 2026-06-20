@@ -100,3 +100,36 @@ def test_progress_calculation_positive_reduction():
 def test_india_average_comparison():
     assert get_vs_india_average(158.0) == pytest.approx(100.0, rel=0.01)
     assert get_vs_india_average(79.0) == pytest.approx(50.0, rel=0.01)
+
+
+def test_all_transport_factors_non_negative():
+    """Regression: every transport emission factor must be >= 0."""
+    from app.services.carbon_engine import TRANSPORT_FACTORS
+    for mode, factor in TRANSPORT_FACTORS.items():
+        assert factor >= 0.0, f"Negative emission factor for transport type '{mode}'"
+
+
+def test_all_food_factors_non_negative():
+    """Regression: every food emission factor must be >= 0."""
+    from app.services.carbon_engine import FOOD_FACTORS
+    for food, factor in FOOD_FACTORS.items():
+        assert factor >= 0.0, f"Negative emission factor for food type '{food}'"
+
+
+def test_progress_when_emissions_increase():
+    """If current emissions exceed baseline, progress must be negative."""
+    result = calculate_progress(current_kg=200.0, baseline_kg=158.0)
+    assert result < 0.0, "Emissions increase should produce a negative progress value"
+
+
+def test_india_average_double():
+    """User emitting twice the India average should return 200%."""
+    result = get_vs_india_average(316.0)
+    assert result == pytest.approx(200.0, rel=0.01)
+
+
+def test_trend_length_matches_days_requested():
+    """Trend output must always contain exactly the requested number of days."""
+    daily = {"2026-06-01": 5.0, "2026-06-10": 3.0}
+    result = calculate_trend(daily, days=30)
+    assert len(result) == 30, f"Expected 30 trend entries, got {len(result)}"
