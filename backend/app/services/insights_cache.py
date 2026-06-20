@@ -1,9 +1,34 @@
+"""
+Insights Cache — SQLite-backed cache for agent pipeline outputs.
+
+Caches AnalysisResult and PlanResult JSON per user with a 24-hour TTL.
+Cache entries are invalidated immediately when the user logs a new activity,
+ensuring coaching recommendations always reflect the latest data.
+"""
 import datetime
 from typing import Optional, Any
 from app.db.database import get_db_context
 
 class InsightsCache:
+    """
+    Manages per-user caching of agent outputs in the insights_cache table.
+
+    Two validity conditions must both be true for a cache hit:
+        1. is_valid = 1  (not explicitly invalidated by a new activity log)
+        2. valid_until > now  (TTL has not expired)
+    """
     async def get(self, user_id: str, agent_type: str, db: Optional[Any] = None) -> str | None:
+        """
+        Retrieve cached agent output JSON if a valid entry exists.
+
+        Args:
+            user_id:    Target user UUID.
+            agent_type: One of "analyst" or "planner".
+            db:         Optional existing DB connection. If None, opens one.
+
+        Returns:
+            Serialised JSON string if a valid cache entry exists, else None.
+        """
         if db is not None:
             return await self._get_with_conn(db, user_id, agent_type)
         async with get_db_context() as conn:
@@ -26,6 +51,15 @@ class InsightsCache:
         return None
 
     async def set(self, user_id: str, agent_type: str, content_json: str, db: Optional[Any] = None):
+        """
+        Store agent output JSON with a 24-hour TTL.
+
+        Args:
+            user_id:      Target user UUID.
+            agent_type:   One of "analyst" or "planner".
+            content_json: Serialised Pydantic model JSON string.
+            db:           Optional existing DB connection.
+        """
         if db is not None:
             await self._set_with_conn(db, user_id, agent_type, content_json)
         else:
@@ -44,6 +78,16 @@ class InsightsCache:
         )
 
     async def invalidate(self, user_id: str, db: Optional[Any] = None):
+        """
+        Mark all cache entries for a user as invalid.
+
+        Called automatically on every activity log to ensure the next
+        analysis request triggers a fresh pipeline run.
+
+        Args:
+            user_id: Target user UUID.
+            db:      Optional existing DB connection.
+        """
         if db is not None:
             await self._invalidate_with_conn(db, user_id)
         else:

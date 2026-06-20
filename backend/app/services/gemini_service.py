@@ -1,3 +1,11 @@
+"""
+Gemini Service — unified interface for all AI provider API calls.
+
+Supports multiple providers (Gemini, Groq, OpenAI, Anthropic, OpenRouter)
+with per-request provider selection via the X-AI-Provider header.
+All agent files call this service exclusively — no agent imports an AI
+SDK directly.
+"""
 import json
 import asyncio
 from typing import AsyncGenerator
@@ -50,7 +58,19 @@ NL_PARSE_SCHEMA = {
 }
 
 def convert_to_openai_schema(schema: dict) -> dict:
-    """Converts a legacy Gemini schema into a standard OpenAI JSON schema."""
+    """
+    Convert a Gemini-style function schema to OpenAI JSON Schema format.
+
+    Gemini uses uppercase type strings ("STRING", "NUMBER"); OpenAI uses
+    lowercase ("string", "number"). This normalises schemas for providers
+    that follow the OpenAI spec (Groq, OpenRouter, OpenAI).
+
+    Args:
+        schema: A Gemini-format function parameter schema dict.
+
+    Returns:
+        A copy of the schema with all type strings lowercased.
+    """
     import copy
     new_schema = copy.deepcopy(schema)
     if "type" in new_schema and isinstance(new_schema["type"], str):

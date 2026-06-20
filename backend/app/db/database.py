@@ -1,3 +1,11 @@
+"""
+Database layer — async SQLite and PostgreSQL connection management.
+
+Supports both SQLite (via aiosqlite, used locally and in CI) and
+PostgreSQL (via psycopg3, used in production on Render via Supabase).
+The translate_query() helper normalises SQLite-style queries to
+PostgreSQL syntax at runtime based on the DATABASE_URL scheme.
+"""
 import os
 import json
 import aiosqlite
@@ -10,6 +18,22 @@ from app.models.schemas import UserProfile, FootprintSummary, UserContext
 
 # SQL translation logic
 def translate_query(query: str, is_postgres: bool) -> str:
+    """
+    Translate a SQLite-style SQL query to PostgreSQL syntax if needed.
+
+    Converts SQLite-specific functions and parameter placeholders:
+        strftime(...)   → to_char(...)
+        DATE(...)       → date cast
+        JULIANDAY(...)  → EXTRACT(DAY FROM ...)
+        ?               → %s  (placeholder style)
+
+    Args:
+        query:       The SQLite-style SQL string to translate.
+        is_postgres: If True, apply all translations. If False, return as-is.
+
+    Returns:
+        The translated (or unchanged) SQL string.
+    """
     if not is_postgres:
         return query
     
@@ -32,6 +56,8 @@ def translate_query(query: str, is_postgres: bool) -> str:
     return query
 
 class PostgresCursorWrapper:
+    """Wraps a psycopg3 cursor to provide an aiosqlite-compatible interface."""
+
     def __init__(self, cur, lastrowid=None):
         self._cur = cur
         self.lastrowid = lastrowid
@@ -42,11 +68,13 @@ class PostgresCursorWrapper:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._cur.close()
 
-    async def fetchone(self):
+    async def fetchone(self) -> dict | None:
+        """Fetch next row as a dict, or None if no rows remain."""
         row = await self._cur.fetchone()
         return dict(row) if row is not None else None
 
-    async def fetchall(self):
+    async def fetchall(self) -> list[dict]:
+        """Fetch all remaining rows as a list of dicts."""
         rows = await self._cur.fetchall()
         return [dict(r) for r in rows]
 
@@ -134,6 +162,12 @@ async def get_db_context():
             yield db
 
 async def init_db():
+    """
+    Run all numbered migration SQL files in order on application startup.
+
+    Migration files are read from the db/migrations/ directory in filename
+    order. Uses CREATE TABLE IF NOT EXISTS so re-running is idempotent.
+    """
     if is_postgres_url(settings.database_url):
         migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
         if not os.path.exists(migrations_dir):
@@ -173,6 +207,7 @@ async def init_db():
             await db.commit()
 
 async def get_db() -> AsyncGenerator[Any, None]:
+    """Async context manager that yields an active database connection."""
     if is_postgres_url(settings.database_url):
         conn = await psycopg.AsyncConnection.connect(settings.database_url)
         try:
@@ -186,6 +221,21 @@ async def get_db() -> AsyncGenerator[Any, None]:
             yield db
 
 async def get_user_context(user_id: str) -> UserContext:
+    """
+    Build the full UserContext needed by the agent pipeline.
+
+    Fetches: user profile, baseline footprint, current month activity
+    summary, last-30-day activity list, and active goal from the database.
+
+    Args:
+        user_id: The UUID of the user to load context for.
+
+    Returns:
+        UserContext Pydantic model with all pipeline input data populated.
+
+    Raises:
+        HTTPException 404: If the user_id does not exist in the database.
+    """
     async with get_db_context() as db:
         # 1. Fetch user profile
         async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as cursor:
