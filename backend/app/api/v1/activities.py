@@ -13,22 +13,39 @@ from app.services.carbon_engine import calculate_activity_co2
 from app.services import gemini_service
 from app.services.insights_cache import insights_cache
 from app.middleware.rate_limiter import check_rate_limit
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["activities"])
 
-def parse_db_datetime(val) -> datetime.datetime:
+def parse_db_datetime(val: str | datetime.datetime | None) -> datetime.datetime:
+    """
+    Parse a datetime value returned from the database.
+
+    Args:
+        val: A datetime object, ISO-format string, or None.
+
+    Returns:
+        A datetime object. Falls back to UTC now on parse failure
+        and logs a warning so data integrity issues are visible.
+    """
     if isinstance(val, datetime.datetime):
         return val
     if not val:
-        return datetime.datetime.now()
-    try:
-        return datetime.datetime.strptime(val, "%Y-%m-%d %H:%M:%S")
-    except Exception:
+        return datetime.datetime.utcnow()
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
         try:
-            # Try parsing with microsecond or ISO format
-            return datetime.datetime.fromisoformat(val.replace("Z", "+00:00"))
-        except Exception:
-            return datetime.datetime.now()
+            return datetime.datetime.strptime(str(val), fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+    except ValueError:
+        logger.warning(
+            "parse_db_datetime: unrecognised format %r — using utcnow()", val
+        )
+        return datetime.datetime.utcnow()
 
 @router.post("/activities", response_model=ActivityResponse)
 async def log_activity(activity_in: ActivityCreate, db: aiosqlite.Connection = Depends(get_db)):

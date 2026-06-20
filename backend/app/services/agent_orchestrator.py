@@ -8,8 +8,11 @@ The CoachAgent always runs fresh (never cached) to ensure coaching
 remains timely and relevant.
 """
 
+import logging
 import json
 from typing import AsyncGenerator
+
+logger = logging.getLogger(__name__)
 from app.db.database import get_user_context
 from app.agents.baseline_agent import BaselineAgent
 from app.agents.analyst_agent import AnalystAgent
@@ -99,8 +102,9 @@ class AgentOrchestrator:
                 
         except GeminiError:
             yield "[ERROR] Analysis temporarily unavailable."
-        except Exception as e:
-            yield f"[ERROR] System error during pipeline execution: {e}"
+        except Exception:
+            logger.exception("Pipeline execution failed for user_id prefix %s", user_id[:8])
+            yield "[ERROR] An unexpected error occurred. Please try again."
 
     async def _auto_generate_missions(self, user_id: str, plan: PlanResult):
         """
