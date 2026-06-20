@@ -42,7 +42,7 @@ class RateLimiter:
 
 rate_limiter = RateLimiter()
 
-def check_rate_limit(user_id: str, endpoint: str, settings_attr: str):
+def check_rate_limit(user_id: str, endpoint: str, settings_attr: str) -> None:
     """
     Enforce a rate limit for the given user and endpoint.
 

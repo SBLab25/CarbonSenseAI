@@ -106,7 +106,7 @@ class AgentOrchestrator:
             logger.exception("Pipeline execution failed for user_id prefix %s", user_id[:8])
             yield "[ERROR] An unexpected error occurred. Please try again."
 
-    async def _auto_generate_missions(self, user_id: str, plan: PlanResult):
+    async def _auto_generate_missions(self, user_id: str, plan: PlanResult) -> None:
         """
         Persist mission rows from the Planner's strategies to the database.
 

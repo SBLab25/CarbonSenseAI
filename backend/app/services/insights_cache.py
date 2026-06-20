@@ -50,7 +50,7 @@ class InsightsCache:
                 return row[0] if isinstance(row, tuple) else None
         return None
 
-    async def set(self, user_id: str, agent_type: str, content_json: str, db: Optional[Any] = None):
+    async def set(self, user_id: str, agent_type: str, content_json: str, db: Optional[Any] = None) -> None:
         """
         Store agent output JSON with a 24-hour TTL.
 
@@ -67,7 +67,7 @@ class InsightsCache:
                 await self._set_with_conn(conn, user_id, agent_type, content_json)
                 await conn.commit()
 
-    async def _set_with_conn(self, db: Any, user_id: str, agent_type: str, content_json: str):
+    async def _set_with_conn(self, db: Any, user_id: str, agent_type: str, content_json: str) -> None:
         now = datetime.datetime.now()
         valid_until = (now + datetime.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -77,7 +77,7 @@ class InsightsCache:
             (user_id, agent_type, content_json, now_str, valid_until)
         )
 
-    async def invalidate(self, user_id: str, db: Optional[Any] = None):
+    async def invalidate(self, user_id: str, db: Optional[Any] = None) -> None:
         """
         Mark all cache entries for a user as invalid.
 
@@ -95,7 +95,7 @@ class InsightsCache:
                 await self._invalidate_with_conn(conn, user_id)
                 await conn.commit()
 
-    async def _invalidate_with_conn(self, db: Any, user_id: str):
+    async def _invalidate_with_conn(self, db: Any, user_id: str) -> None:
         await db.execute(
             "UPDATE insights_cache SET is_valid = 0 WHERE user_id = ?",
             (user_id,)
