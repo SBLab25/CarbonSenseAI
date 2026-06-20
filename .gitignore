@@ -9,3 +9,12 @@ dist/
 coverage/
 htmlcov/
 Prompts/
+
+# Antigravity / AI platform artifacts
+.agents/
+skills-lock.json
+Project_memory.md
+project_status.md
+DESIGN.md
+*.skills-lock
+.antigravity/
