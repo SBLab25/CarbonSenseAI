@@ -29,7 +29,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       if (config.provider) aiHeaders['X-AI-Provider'] = config.provider;
       if (config.apiKey) aiHeaders['X-AI-Key'] = config.apiKey;
       if (config.model) aiHeaders['X-AI-Model'] = config.model;
-    } catch {}
+    } catch (e) {
+      console.warn('[CarbonSense] Failed to parse ai_config from localStorage:', e);
+    }
   }
 
   const headers = {
@@ -48,8 +50,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     try {
       const errData = await response.json();
       detail = errData.detail || detail;
-    } catch {
-      // Ignore parsing errors
+    } catch (e) {
+      console.warn('[CarbonSense] Failed to parse error response body:', e);
     }
     throw new Error(detail);
   }

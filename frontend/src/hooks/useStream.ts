@@ -39,7 +39,9 @@ export function useStream() {
         if (config.provider) aiHeaders['X-AI-Provider'] = config.provider;
         if (config.apiKey) aiHeaders['X-AI-Key'] = config.apiKey;
         if (config.model) aiHeaders['X-AI-Model'] = config.model;
-      } catch {}
+      } catch (e) {
+        console.warn('[CarbonSense] Failed to parse ai_config from localStorage:', e);
+      }
     }
 
     try {
@@ -58,8 +60,8 @@ export function useStream() {
         try {
           const err = await response.json();
           msg = err.detail || msg;
-        } catch {
-          // ignore
+        } catch (e) {
+          console.warn('[CarbonSense] Failed to parse error response body:', e);
         }
         throw new Error(msg);
       }
