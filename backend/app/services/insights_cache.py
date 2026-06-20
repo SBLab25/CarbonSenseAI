@@ -35,20 +35,22 @@ class InsightsCache:
             return await self._get_with_conn(conn, user_id, agent_type)
 
     async def _get_with_conn(self, db: Any, user_id: str, agent_type: str) -> str | None:
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        """
+        Fetch valid cached JSON from the database using the provided connection.
+
+        Rows are always returned as dicts because aiosqlite.Row supports
+        key-based access. No tuple fallback is needed.
+        """
+        now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         async with db.execute(
-            "SELECT content_json FROM insights_cache WHERE user_id = ? AND agent_type = ? AND is_valid = 1 AND valid_until > ?",
-            (user_id, agent_type, now)
+            "SELECT content_json FROM insights_cache "
+            "WHERE user_id = ? AND agent_type = ? AND is_valid = 1 AND valid_until > ?",
+            (user_id, agent_type, now),
         ) as cursor:
             row = await cursor.fetchone()
-        if row:
-            if isinstance(row, dict):
-                return row["content_json"]
-            try:
-                return row["content_json"]
-            except (TypeError, IndexError):
-                return row[0] if isinstance(row, tuple) else None
-        return None
+        if row is None:
+            return None
+        return row["content_json"] if isinstance(row, dict) else row[0]
 
     async def set(self, user_id: str, agent_type: str, content_json: str, db: Optional[Any] = None) -> None:
         """
