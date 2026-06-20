@@ -1,3 +1,17 @@
+"""
+Carbon Engine — deterministic CO₂ emission calculations.
+
+This module has zero AI or database dependency. Every function is pure
+and independently unit-testable. Emission factors are declared as
+module-level constants with inline source citations.
+
+Sources:
+    Transport : UK DEFRA Conversion Factors 2023, IPCC AR6
+    Energy    : IEA 2023, India CEA grid emission factor (0.708 kg CO₂/kWh)
+    Food      : Poore & Nemecek, Science (2018); Our World in Data
+    Shopping  : Berners-Lee, How Bad Are Bananas? (2020)
+"""
+
 import datetime
 from app.models.schemas import FootprintSummary, CategoryBreakdown, CarbonTrend
 
@@ -58,6 +72,20 @@ FACTORS_MAP = {
 }
 
 def calculate_activity_co2(category: str, activity_type: str, amount: float) -> float:
+    """
+    Calculate kg CO₂ for a single logged activity.
+
+    Args:
+        category:      One of "transport", "energy", "food", "shopping".
+        activity_type: Specific type within the category (e.g. "car_petrol").
+        amount:        Numeric quantity in the category's native unit
+                       (km for transport, kWh for energy, kg for food,
+                        count for shopping).
+
+    Returns:
+        Emission value in kg CO₂, rounded to 4 decimal places.
+        Returns 0.0 for unknown category/type or non-positive amounts.
+    """
     if amount <= 0:
         return 0.0
     
@@ -75,6 +103,16 @@ def calculate_activity_co2(category: str, activity_type: str, amount: float) -> 
     return round(factor * amount, 4)
 
 def calculate_monthly_summary(activities: list[dict], baseline_kg: float) -> FootprintSummary:
+    """
+    Calculate the monthly footprint summary and total CO₂ emissions.
+
+    Args:
+        activities:    List of logged activities as dictionaries containing category and co2_kg.
+        baseline_kg:   Baseline emissions value in kg for comparison.
+
+    Returns:
+        FootprintSummary object containing total and category-wise emissions.
+    """
     transport_kg = 0.0
     energy_kg = 0.0
     food_kg = 0.0
@@ -102,6 +140,15 @@ def calculate_monthly_summary(activities: list[dict], baseline_kg: float) -> Foo
     )
 
 def calculate_category_breakdown(summary: FootprintSummary) -> dict[str, CategoryBreakdown]:
+    """
+    Calculate the percentage breakdown of emissions by category.
+
+    Args:
+        summary:       FootprintSummary object containing total and category-wise emissions.
+
+    Returns:
+        Dictionary mapping each category to its CategoryBreakdown containing kg and pct.
+    """
     total = summary.total_kg
     if total <= 0:
         return {
@@ -119,6 +166,16 @@ def calculate_category_breakdown(summary: FootprintSummary) -> dict[str, Categor
     }
 
 def calculate_trend(daily_totals: dict[str, float], days: int) -> list[CarbonTrend]:
+    """
+    Calculate daily emission trends over a specified number of days.
+
+    Args:
+        daily_totals:  Dictionary mapping date strings (YYYY-MM-DD) to total CO₂ in kg.
+        days:          Number of past days to include in the trend analysis.
+
+    Returns:
+        List of CarbonTrend objects containing daily emission totals.
+    """
     today = datetime.date.today()
     trends = []
     for i in range(days):
@@ -129,9 +186,28 @@ def calculate_trend(daily_totals: dict[str, float], days: int) -> list[CarbonTre
     return trends
 
 def calculate_progress(current_kg: float, baseline_kg: float) -> float:
+    """
+    Calculate the percentage progress of reduction against a baseline.
+
+    Args:
+        current_kg:    Current period's total CO₂ emissions in kg.
+        baseline_kg:   Baseline period's total CO₂ emissions in kg.
+
+    Returns:
+        Percentage of emissions reduced compared to the baseline, rounded to 2 decimal places.
+    """
     if baseline_kg <= 0:
         return 0.0
     return round(((baseline_kg - current_kg) / baseline_kg) * 100, 2)
 
 def get_vs_india_average(monthly_kg: float) -> float:
+    """
+    Compare monthly emissions against the India national average.
+
+    Args:
+        monthly_kg:    User's total monthly CO₂ emissions in kg.
+
+    Returns:
+        Percentage of user's emissions relative to the India monthly average, rounded to 2 decimal places.
+    """
     return round((monthly_kg / INDIA_MONTHLY_AVERAGE_KG) * 100, 2)

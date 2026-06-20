@@ -1,3 +1,10 @@
+"""
+CarbonSense AI — FastAPI application factory.
+
+Initialises the ASGI application, registers CORS and AI-config middleware,
+mounts all API v1 routers, and runs the database migration on startup.
+"""
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +15,15 @@ from starlette.requests import Request
 from app.services.context import ai_config_ctx
 
 class AIConfigMiddleware(BaseHTTPMiddleware):
+    """
+    Reads optional per-request AI provider headers and stores them in a
+    context variable so downstream services can route to the correct LLM.
+
+    Accepted headers:
+        X-AI-Provider : one of gemini | groq | openai | anthropic | openrouter
+        X-AI-Key      : caller-supplied API key (overrides server default)
+        X-AI-Model    : specific model string (e.g. gemini-1.5-flash)
+    """
     async def dispatch(self, request: Request, call_next):
         provider = request.headers.get("X-AI-Provider")
         api_key = request.headers.get("X-AI-Key")
@@ -42,6 +58,7 @@ async def lifespan(app: FastAPI):
     yield
 
 def create_app() -> FastAPI:
+    """Create, configure, and return the FastAPI application instance."""
     app = FastAPI(
         title="CarbonSense AI",
         description="Multi-agent carbon footprint coaching platform",
